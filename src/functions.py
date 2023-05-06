@@ -16,6 +16,7 @@ def vacancy_data_db(vacancy_data):
     for vac in vacancy_data:
         vacancy = {'vacancy_id': vac['id'],
                    'vacancy_name': vac['name'],
+                   'vacancy_url': vac['alternate_url'],
                    'salary_from': None,
                    'salary_to': None,
                    'currency': None,
