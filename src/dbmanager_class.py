@@ -15,8 +15,12 @@ class DBManager:
         conn.autocommit = True
         cur = conn.cursor()
 
-        cur.execute(f"DROP DATABASE {self.dbname}")
-        cur.execute(f"CREATE DATABASE {self.dbname}")
+        try:
+            cur.execute(f"DROP DATABASE {self.dbname}")
+        except psycopg2.InvalidCatalogName:
+            pass
+        finally:
+            cur.execute(f"CREATE DATABASE {self.dbname}")
 
         conn.close()
 
@@ -26,6 +30,48 @@ class DBManager:
         self.cur = self.conn.cursor()
         # Создаем автокоммит
         self.conn.autocommit = True
+
+    def get_companies_and_vacancies_count(self):
+        """Получает список всех компаний и количество вакансий у каждой компании."""
+        with self.conn:
+            self.cur.execute(f"""SELECT company_name, amount_of_vacancies FROM employers""")
+            empl_and_vac_count = self.cur.fetchall()
+            return empl_and_vac_count
+
+    def get_all_vacancies(self):
+        """получает список всех вакансий с указанием названия компании, названия вакансии и зарплаты и ссылки на вакансию."""
+        with self.conn:
+            self.cur.execute(f"""SELECT company_name, vacancy_name,  salary_from, salary_to, currency, vacancy_url
+                                 FROM vacancies
+                                 """)
+            all_vacancies = self.cur.fetchall()
+            return all_vacancies
+
+    def get_avg_salary(self):
+        """получает среднюю зарплату по вакансиям."""
+        with self.conn:
+            self.cur.execute(f"""SELECT (AVG(salary_from) + AVG(salary_to)) / 2 AS average_salary FROM vacancies""")
+            avg_salary = self.cur.fetchall()
+            return avg_salary
+
+    def get_vacancies_with_higher_salary(self):
+        """получает список всех вакансий, у которых зарплата выше средней по всем вакансиям."""
+        with self.conn:
+            self.cur.execute(f"""SELECT * FROM vacancies 
+                                 WHERE salary_from > (AVG(salary_from) + AVG(salary_to)) / 2 
+                                 OR salary_to > (AVG(salary_from) + AVG(salary_to)) / 2
+                                 """)
+            higher_salary = self.cur.fetchall()
+            return higher_salary
+
+    def get_vacancies_with_keyword(self, keyword):
+        """получает список всех вакансий, в названии которых содержатся переданные в метод слова, например “python”."""
+        with self.conn:
+            self.cur.execute(f"""SELECT * FROM vacancies 
+                                 WHERE vacancy_name LIKE "f'%{keyword}%'"
+                                 """)
+            vac_w_kw = self.cur.fetchall()
+            return vac_w_kw
 
 
 
@@ -122,57 +168,15 @@ class VacanciesDB(DBManager):
             for vacancy in vacancies:
                 self.cur.execute(
                     f"""
-                        INSERT INTO vacancies (vacancy_id, vacancy_name, salary_from, salary_to, currency, requirements,
+                        INSERT INTO vacancies (vacancy_id, vacancy_name, vacancy_url, salary_from, salary_to, currency, requirements,
                                                responsibilities, has_test, employment, company_id, company_name, city,
                                                address
                                                )
-                        VALUES (%s, %s, %s, %s, %s, %s)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """,
-                    (vacancies['vacancy_id'], vacancies['vacancy_name'], vacancies['salary_from'],
-                     vacancies['salary_to'], vacancies['currency'], vacancies['requirements'],
-                     vacancies['responsibilities'], vacancies['has_test'], vacancies['employment'], vacancies['company_id'],
-                     vacancies['company_name'], vacancies['city'], vacancies['address'])
+                    (vacancy['vacancy_id'], vacancy['vacancy_name'], vacancy['vacancy_url'], vacancy['salary_from'],
+                     vacancy['salary_to'], vacancy['currency'], vacancy['requirements'],
+                     vacancy['responsibilities'], vacancy['has_test'], vacancy['employment'], vacancy['company_id'],
+                     vacancy['company_name'], vacancy['city'], vacancy['address'])
                 )
 
-
-
-
-
-def insert_data_to_json(self) -> None:
-    """Считываем данные из БД и экспортируем в файл JSON"""
-    # Задаём название файла по названию таблицы
-    file = f'{self.table_name}.json'
-    # Считываем данные из БД
-    repos_dict: list[dict] = self.read_db()
-    # Записываем данные в файл
-    with open(file, 'a', encoding='utf-8') as f:
-        json.dump(repos_dict, f, ensure_ascii=False)
-
-
-def read_db(self, sort_by: str = None, limit: int = None) -> list[dict]:
-    """Получаем и возвращаем данные из таблицы с сортировкой и/или ограничением или без"""
-    with self.conn:
-        # Данные с сортировкой и ограничением
-        if sort_by and limit:
-            self.cur.execute(f"""SELECT * FROM {self.table_name} ORDER BY {sort_by} LIMIT {limit}""")
-        # Данные только с сортировкой
-        elif sort_by:
-            self.cur.execute(f"""SELECT * FROM {self.table_name} ORDER BY {sort_by}""")
-        # Данные только с ограничением
-        elif limit:
-            self.cur.execute(f"""SELECT * FROM {self.table_name} LIMIT {limit}""")
-        # Все данные без сортировки
-        else:
-            self.cur.execute(f"""SELECT * FROM {self.table_name}""")
-        repos_data: list[tuple] = self.cur.fetchall()
-        repos_dict = []
-        # Преобразуем данные в список словарей репозиториев
-        for data in repos_data:
-            repos_dict.append({'repository_id': data[0],
-                               'title': data[1],
-                               'owner': data[2],
-                               'forks': data[3],
-                               'language': data[4],
-                               'repository_url': data[5]
-                               })
-    return repos_dict
