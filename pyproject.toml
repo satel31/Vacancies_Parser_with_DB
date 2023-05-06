@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "coursework-5"
+version = "0.1.0"
+description = ""
+authors = ["satel31 <blokhnina.tatiana@yandex.ru>"]
+readme = "README.md"
+packages = [{include = "coursework_5"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+
+[tool.poetry.group.dev.dependencies]
+psycopg2 = "^2.9.6"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
