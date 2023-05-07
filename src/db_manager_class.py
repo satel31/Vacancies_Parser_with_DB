@@ -10,20 +10,6 @@ class DBManager:
         self.host = host
         self.port = port
 
-        conn = psycopg2.connect(host=self.host, dbname='postgres', user=self.user, password=self.password,
-                                port=self.port)
-        conn.autocommit = True
-        cur = conn.cursor()
-
-        try:
-            cur.execute(f"DROP DATABASE {self.dbname}")
-        except psycopg2.InvalidCatalogName:
-            pass
-        finally:
-            cur.execute(f"CREATE DATABASE {self.dbname}")
-
-        conn.close()
-
         # Создаем соединение
         self.conn = psycopg2.connect(host=host, database=dbname, user=user, password=password, port=port)
         # Создаем курсор
@@ -51,15 +37,15 @@ class DBManager:
         """получает среднюю зарплату по вакансиям."""
         with self.conn:
             self.cur.execute(f"""SELECT (AVG(salary_from) + AVG(salary_to)) / 2 AS average_salary FROM vacancies""")
-            avg_salary = self.cur.fetchall()
+            avg_salary = self.cur.fetchone()
             return avg_salary
 
     def get_vacancies_with_higher_salary(self):
         """получает список всех вакансий, у которых зарплата выше средней по всем вакансиям."""
         with self.conn:
             self.cur.execute(f"""SELECT * FROM vacancies 
-                                 WHERE salary_from > (AVG(salary_from) + AVG(salary_to)) / 2 
-                                 OR salary_to > (AVG(salary_from) + AVG(salary_to)) / 2
+                                 WHERE salary_from > (SELECT (AVG(salary_from) + AVG(salary_to)) / 2 FROM vacancies) 
+                                 OR salary_to > (SELECT (AVG(salary_from) + AVG(salary_to)) / 2 FROM vacancies)
                                  """)
             higher_salary = self.cur.fetchall()
             return higher_salary
@@ -68,11 +54,17 @@ class DBManager:
         """получает список всех вакансий, в названии которых содержатся переданные в метод слова, например “python”."""
         with self.conn:
             self.cur.execute(f"""SELECT * FROM vacancies 
-                                 WHERE vacancy_name LIKE "f'%{keyword}%'"
+                                 WHERE vacancy_name LIKE '%{keyword}%'
                                  """)
             vac_w_kw = self.cur.fetchall()
             return vac_w_kw
 
+    def read_db(self, table_name) -> list[dict]:
+        """Получаем и возвращаем данные из таблицы с сортировкой и/или ограничением или без"""
+        with self.conn:
+            self.cur.execute(f"""SELECT * FROM {table_name}""")
+            result = self.cur.fetchall()
+            return result
 
 
 class EmployersDB(DBManager):
@@ -82,13 +74,7 @@ class EmployersDB(DBManager):
         """При инициализации объекта создаётся соединение, курсор"""
         super().__init__(dbname, user, password, host, port)
 
-        # Создаем соединение
-        self.conn = psycopg2.connect(host=self.host, database=self.dbname, user=self.user, password=self.password,
-                                     port=self.port)
-        # Создаем курсор
-        self.cur = self.conn.cursor()
-        # Создаем автокоммит
-        self.conn.autocommit = True
+        self.create_table_employer()
 
     def create_table_employer(self) -> None:
         """Создаём таблицу в БД"""
@@ -99,8 +85,7 @@ class EmployersDB(DBManager):
                     company_name VARCHAR(100) NOT NULL,
                     company_url TEXT,
                     vacancies_url TEXT,
-                    amount_of_vacancies INTEGER,
-                    repository_url TEXT
+                    amount_of_vacancies INTEGER
                 )
             """)
 
@@ -110,13 +95,12 @@ class EmployersDB(DBManager):
             for employer in employers:
                 self.cur.execute(
                     f"""
-                        INSERT INTO employers (company_id, company_name, company_url, vacancies_url, amount_of_vacancies, 
-                                               repository_url
+                        INSERT INTO employers (company_id, company_name, company_url, vacancies_url, amount_of_vacancies
                                                )
-                        VALUES (%s, %s, %s, %s, %s, %s)
+                        VALUES (%s, %s, %s, %s, %s)
                         """,
                     (employer['company_id'], employer['company_name'], employer['company_url'],
-                     employer['vacancies_url'], employer['amount_of_vacancies'], employer['repository_url'])
+                     employer['vacancies_url'], employer['amount_of_vacancies'])
                 )
 
 
@@ -128,13 +112,7 @@ class VacanciesDB(DBManager):
 
         super().__init__(dbname, user, password, host, port)
 
-        # Создаем соединение
-        self.conn = psycopg2.connect(host=self.host, database=self.dbname, user=self.user, password=self.password,
-                                     port=self.port)
-        # Создаем курсор
-        self.cur = self.conn.cursor()
-        # Создаем автокоммит
-        self.conn.autocommit = True
+        self.create_table_vacancies()
 
     def create_table_vacancies(self) -> None:
         """Создаём таблицу в БД"""
@@ -143,6 +121,7 @@ class VacanciesDB(DBManager):
                     CREATE TABLE vacancies (
                         vacancy_id INTEGER PRIMARY KEY,
                         vacancy_name VARCHAR(100) NOT NULL,
+                        vacancy_url TEXT,
                         salary_from INTEGER,
                         salary_to INTEGER,
                         currency VARCHAR(100),
@@ -159,7 +138,7 @@ class VacanciesDB(DBManager):
             self.cur.execute(f"""
                 ALTER TABLE vacancies 
                 ADD CONSTRAINT fk_vacancies_employers
-                FOREIGN KEY (company_id) REFERENCES employer(company_id)
+                FOREIGN KEY (company_id) REFERENCES employers(company_id)
                 """)
 
     def insert_data_to_db(self, vacancies: list[dict]) -> None:
