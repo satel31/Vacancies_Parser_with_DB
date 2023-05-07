@@ -80,7 +80,5 @@ def main() -> None:
         user_action = input('Вы хотите продолжить? Введите да/нет ')
 
 
-
-
 if __name__ == '__main__':
     main()

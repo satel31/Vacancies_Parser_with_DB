@@ -51,4 +51,3 @@ def user_interaction(dbmanager):
                 print(*item, sep=', ')
         else:
             print('Такой таблицы нет. Попробуйте снова')
-
