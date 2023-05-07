@@ -2,8 +2,10 @@ import psycopg2
 
 
 class DBManager:
+    """Обеспечивает взаимодействие с базой данных"""
     def __init__(self, dbname: str, user: str, password: str, host: str = 'localhost', port: str = '5432') -> None:
-        """При инициализации объекта создаётся соединение, курсор"""
+        """При инициализации объекта создаётся соединение и курсор"""
+
         self.dbname = dbname
         self.user = user
         self.password = password
@@ -17,15 +19,15 @@ class DBManager:
         # Создаем автокоммит
         self.conn.autocommit = True
 
-    def get_companies_and_vacancies_count(self):
-        """Получает список всех компаний и количество вакансий у каждой компании."""
+    def get_companies_and_vacancies_count(self) -> list[tuple]:
+        """Возвращает список всех компаний и количество вакансий у каждой компании"""
         with self.conn:
             self.cur.execute(f"""SELECT company_name, amount_of_vacancies FROM employers""")
             empl_and_vac_count = self.cur.fetchall()
             return empl_and_vac_count
 
-    def get_all_vacancies(self):
-        """получает список всех вакансий с указанием названия компании, названия вакансии и зарплаты и ссылки на вакансию."""
+    def get_all_vacancies(self) -> list[tuple]:
+        """Возвращает список всех вакансий с указанием названия компании, названия вакансии и зарплаты и ссылки на вакансию"""
         with self.conn:
             self.cur.execute(f"""SELECT company_name, vacancy_name,  salary_from, salary_to, currency, vacancy_url
                                  FROM vacancies
@@ -33,15 +35,15 @@ class DBManager:
             all_vacancies = self.cur.fetchall()
             return all_vacancies
 
-    def get_avg_salary(self):
-        """получает среднюю зарплату по вакансиям."""
+    def get_avg_salary(self) -> tuple:
+        """Возвращает среднюю зарплату по вакансиям на основе нижней и верхней границ"""
         with self.conn:
             self.cur.execute(f"""SELECT (AVG(salary_from) + AVG(salary_to)) / 2 AS average_salary FROM vacancies""")
             avg_salary = self.cur.fetchone()
             return avg_salary
 
-    def get_vacancies_with_higher_salary(self):
-        """получает список всех вакансий, у которых зарплата выше средней по всем вакансиям."""
+    def get_vacancies_with_higher_salary(self) -> list[tuple]:
+        """Возвращает список всех вакансий, у которых зарплата выше средней по всем вакансиям"""
         with self.conn:
             self.cur.execute(f"""SELECT * FROM vacancies 
                                  WHERE salary_from > (SELECT (AVG(salary_from) + AVG(salary_to)) / 2 FROM vacancies) 
@@ -50,8 +52,8 @@ class DBManager:
             higher_salary = self.cur.fetchall()
             return higher_salary
 
-    def get_vacancies_with_keyword(self, keyword):
-        """получает список всех вакансий, в названии которых содержатся переданные в метод слова, например “python”."""
+    def get_vacancies_with_keyword(self, keyword: str) -> list[tuple]:
+        """Возвращает список всех вакансий, в названии которых содержится ключевое слово"""
         with self.conn:
             self.cur.execute(f"""SELECT * FROM vacancies 
                                  WHERE vacancy_name LIKE '%{keyword}%'
@@ -59,8 +61,8 @@ class DBManager:
             vac_w_kw = self.cur.fetchall()
             return vac_w_kw
 
-    def read_db(self, table_name) -> list[dict]:
-        """Получаем и возвращаем данные из таблицы с сортировкой и/или ограничением или без"""
+    def read_db(self, table_name: str) -> list[tuple]:
+        """Получаем и возвращаем все данные из таблицы"""
         with self.conn:
             self.cur.execute(f"""SELECT * FROM {table_name}""")
             result = self.cur.fetchall()
@@ -71,7 +73,7 @@ class EmployersDB(DBManager):
     """Обеспечивает взаимодействие с базой данных Postgres"""
 
     def __init__(self, dbname: str, user: str, password: str, host: str = 'localhost', port: str = '5432') -> None:
-        """При инициализации объекта создаётся соединение, курсор"""
+        """При инициализации объекта создаётся соединение и курсор"""
         super().__init__(dbname, user, password, host, port)
 
         self.create_table_employer()
@@ -105,7 +107,7 @@ class EmployersDB(DBManager):
 
 
 class VacanciesDB(DBManager):
-    """Обеспечивает взаимодействие с базой данных Postgres"""
+    """Обеспечивает взаимодействие с таблицей vacancies"""
 
     def __init__(self, dbname: str, user: str, password: str, host: str = 'localhost', port: str = '5432') -> None:
         """При инициализации объекта создаётся соединение, курсор"""
@@ -115,7 +117,7 @@ class VacanciesDB(DBManager):
         self.create_table_vacancies()
 
     def create_table_vacancies(self) -> None:
-        """Создаём таблицу в БД"""
+        """Создаём таблицу vacancies в БД"""
         with self.conn:
             self.cur.execute(f"""
                     CREATE TABLE vacancies (
@@ -142,7 +144,7 @@ class VacanciesDB(DBManager):
                 """)
 
     def insert_data_to_db(self, vacancies: list[dict]) -> None:
-        """Добавляем данные в таблицу в БД"""
+        """Добавляем данные в таблицу vacancies в БД"""
         with self.conn:
             for vacancy in vacancies:
                 self.cur.execute(

@@ -1,4 +1,5 @@
-def employer_data_db(employer_data):
+def employer_data_db(employer_data: list[dict]) -> list[dict]:
+    """Составляем словари с нужными данными для внесения в БД в таблицу employer"""
     employer_db = []
     for emp in employer_data:
         employer = {'company_id': emp['id'],
@@ -11,7 +12,8 @@ def employer_data_db(employer_data):
     return employer_db
 
 
-def vacancy_data_db(vacancy_data):
+def vacancy_data_db(vacancy_data: list[dict]) -> list[dict]:
+    """Составляем словари с нужными данными для внесения в БД в таблицу vacancy"""
     vacancy_db = []
     for vac in vacancy_data:
         vacancy = {'vacancy_id': vac['id'],

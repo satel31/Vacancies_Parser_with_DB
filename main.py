@@ -13,22 +13,26 @@ from src.user_interaction import user_interaction
 def main() -> None:
     """Основной интерфейс программы"""
 
-    # Запрашиваем имя пользователя для поиска
+    # Запрашиваем ключевое слово для поиска
     print('Введите ключевое слово для поиска работодателей')
     emp_keyword: str = input()
 
-    # Собираем статистику по репозиториям пользователя
+    # Собираем данные по работодателям
     er = EmployerRequest(emp_keyword)
-    employers = er.request_data()
-    employer_ids = er.get_id(employers)
+    employers: list[dict] = er.request_data()
 
+    # Получаем данные об id работодателей
+    employer_ids: list = er.get_id(employers)
+
+    # Собираем данные по вакансиям работодателей
     vr = VacancyRequest(employer_ids)
-    vacancies = vr.pass_by_page()
+    vacancies: list[dict] = vr.pass_by_page()
 
-    employers_data = employer_data_db(employers)
-    vacancies_data = vacancy_data_db(vacancies)
+    # Преобразуем данные для внесения в БД
+    employers_data: list[dict] = employer_data_db(employers)
+    vacancies_data: list[dict] = vacancy_data_db(vacancies)
 
-    # Запрашиваем имя таблицы
+    # Запрашиваем имя базы данных
     print('Введите имя базы данных')
     db_name: str = input()
 
@@ -42,28 +46,35 @@ def main() -> None:
         'port': os.getenv('port'),
     }
 
+    # Подключаемся к БД test
     conn = psycopg2.connect(**db_config, dbname='test')
     conn.autocommit = True
     cur = conn.cursor()
 
+    # Удаляем БД, если имя совпадает
     cur.execute(f"DROP DATABASE {db_name}")
+    # Создаём новую БД
     cur.execute(f"CREATE DATABASE {db_name}")
 
     conn.close()
 
-    # Создаем экземпляр PostgresDB, при инициализации которого создаётся таблица
+    # Создаем экземпляр DBManager, при инициализации которого создаётся подключение к новой БД
     db = DBManager(dbname=db_name, **db_config)
-    # Сохраняем данные в БД
+
+    # Сохраняем данные в БД в таблицу employers
     emp_db = EmployersDB(dbname=db_name, **db_config)
     emp_db.insert_data_to_db(employers_data)
 
+    # Сохраняем данные в БД в таблицу vacancies
     vac_db = VacanciesDB(dbname=db_name, **db_config)
     vac_db.insert_data_to_db(vacancies_data)
 
     print(f'Данные успешно записаны в базу данных {db_name} в таблицы employers и vacancies')
 
+    # Запрашиваем у пользователя желание продолжить
     user_action = input('Вы хотите продолжить? Введите да/нет ')
 
+    # Работаем с БД пока пользователь не введёт 'нет'
     while user_action.lower() == 'да':
         user_interaction(db)
         user_action = input('Вы хотите продолжить? Введите да/нет ')
