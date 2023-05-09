@@ -7,7 +7,7 @@ class EmployerRequest:
     def __init__(self, key_word: str) -> None:
         """Инициирует запрос ключевым словом и ссылкой"""
 
-        self.key_word = key_word.lower()
+        self.key_word = key_word
 
         # Ссылка на работодателей с открытыми вакансиями
         self.__url: str = "https://api.hh.ru/employers?only_with_vacancies=true"

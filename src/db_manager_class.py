@@ -131,7 +131,7 @@ class VacanciesDB(DBManager):
                         responsibilities TEXT,
                         has_test BOOL,
                         employment VARCHAR(100),
-                        company_id INTEGER NOT NULL,
+                        company_id INTEGER,
                         company_name VARCHAR(100) NOT NULL,
                         city VARCHAR(100),
                         address TEXT
