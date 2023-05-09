@@ -32,6 +32,10 @@ def main() -> None:
     employers_data: list[dict] = employer_data_db(employers)
     vacancies_data: list[dict] = vacancy_data_db(vacancies)
 
+    if len(employers_data) == 0:
+        print("Работодателей по Вашему запросу не найдено. Попробуйте ещё раз с иным ключевым словом")
+        return
+
     # Запрашиваем имя базы данных
     print('Введите имя базы данных')
     db_name: str = input()
