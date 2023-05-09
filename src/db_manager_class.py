@@ -70,7 +70,7 @@ class DBManager:
 
 
 class EmployersDB(DBManager):
-    """Обеспечивает взаимодействие с базой данных Postgres"""
+    """Обеспечивает взаимодействие с таблицей employers"""
 
     def __init__(self, dbname: str, user: str, password: str, host: str = 'localhost', port: str = '5432') -> None:
         """При инициализации объекта создаётся соединение и курсор"""
