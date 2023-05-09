@@ -26,7 +26,7 @@ def vacancy_data_db(vacancy_data: list[dict]) -> list[dict]:
                    'responsibilities': vac['snippet']['responsibility'],
                    'has_test': vac['has_test'],
                    'employment': vac['employment']['name'],
-                   'company_id': vac['employer']['id'],
+                   'company_id': None,
                    'company_name': vac['employer']['name'],
                    'city': vac['area']['name'],
                    'address': None
@@ -36,6 +36,7 @@ def vacancy_data_db(vacancy_data: list[dict]) -> list[dict]:
             vacancy['salary_to'] = vac['salary']['to']
             vacancy['currency'] = vac['salary']['currency']
             vacancy['address'] = vac['address']['raw']
+            vacancy['company_id'] = vac['employer']['id'],
         except TypeError:
             pass
 
