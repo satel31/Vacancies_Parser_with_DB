@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 import psycopg2
 
 from src.requests_classes import EmployerRequest, VacancyRequest
-from src.functions import employer_data_db, vacancy_data_db
+from src.functions import employer_data_db, vacancy_data_db, create_db
 from src.db_manager_class import DBManager, EmployersDB, VacanciesDB
 from src.user_interaction import user_interaction
 
@@ -50,17 +50,8 @@ def main() -> None:
         'port': os.getenv('port'),
     }
 
-    # Подключаемся к БД test
-    conn = psycopg2.connect(**db_config, dbname='test')
-    conn.autocommit = True
-    cur = conn.cursor()
-
-    # Удаляем БД, если имя совпадает
-    cur.execute(f"DROP DATABASE {db_name}")
-    # Создаём новую БД
-    cur.execute(f"CREATE DATABASE {db_name}")
-
-    conn.close()
+    # Создаем новую БД
+    create_db(dbname=db_name, **db_config)
 
     # Создаем экземпляр DBManager, при инициализации которого создаётся подключение к новой БД
     db = DBManager(dbname=db_name, **db_config)

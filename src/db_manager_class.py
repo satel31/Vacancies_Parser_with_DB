@@ -13,12 +13,11 @@ class DBManager:
         self.port = port
 
         # Создаем соединение
-        self.conn = psycopg2.connect(host=host, database=dbname, user=user, password=password, port=port)
+        self.conn = psycopg2.connect(host=self.host, database=self.dbname, user=self.user, password=self.password, port=self.port)
         # Создаем курсор
         self.cur = self.conn.cursor()
         # Создаем автокоммит
         self.conn.autocommit = True
-
     def get_companies_and_vacancies_count(self) -> list[tuple]:
         """Возвращает список всех компаний и количество вакансий у каждой компании"""
         with self.conn:

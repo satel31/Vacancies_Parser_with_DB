@@ -1,3 +1,4 @@
+import psycopg2
 def employer_data_db(employer_data: list[dict]) -> list[dict]:
     """Составляем словари с нужными данными для внесения в БД в таблицу employer"""
     employer_db = []
@@ -43,3 +44,19 @@ def vacancy_data_db(vacancy_data: list[dict]) -> list[dict]:
         vacancy_db.append(vacancy)
 
     return vacancy_db
+
+
+def create_db(dbname: str, user: str, password: str, host: str = 'localhost', port: str = '5432'):
+    """Создаём новую базу данных"""
+
+    # Подключаемся к БД test
+    conn = psycopg2.connect(host=host, user=user, password=password, port=port, dbname='test')
+    conn.autocommit = True
+    cur = conn.cursor()
+
+    # Удаляем БД, если имя совпадает
+    cur.execute(f"DROP DATABASE {dbname}")
+    # Создаём новую БД
+    cur.execute(f"CREATE DATABASE {dbname}")
+
+    conn.close()
